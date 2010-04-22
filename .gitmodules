@@ -1,0 +1,3 @@
+[submodule "phphaml"]
+	path = phphaml
+	url = git@github.com:joebushi/phphaml.git
