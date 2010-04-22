@@ -21,7 +21,6 @@ Author URI: http://thedextrousweb.com
  */
  
 define('COMPILED_TEMPLATES', WP_CONTENT_DIR . '/compiled-templates');
-   
 
 /*
  * Setup and teardown
@@ -36,6 +35,13 @@ function wphaml_activate()
    {  
       add_action('admin_notices', 'wphaml_warning');
    }
+   if (!defined('HAML_TEMPLATES')) {
+     define('HAML_TEMPLATES', wph_theme_dir() . '/templates/');
+   }
+   if(!file_exists(HAML_TEMPLATES) && !mkdir(HAML_TEMPLATES))
+    {  
+       add_action('admin_notices', 'wphaml_dir_warning');
+    }
 }
 
 function wphaml_deactivate()
@@ -44,7 +50,12 @@ function wphaml_deactivate()
 
 function wphaml_warning() 
 {
-   echo "<div class='updated fade'><p>php-haml will currently work: you need to create <em>" . COMPILED_TEMPLATES . "</em> and make sure it's writeable by your webserver</p></div>";
+   echo "<div class='updated fade'><p>In order for php-haml to work you need to create <em>" . COMPILED_TEMPLATES . "</em> and make sure it's writeable by your webserver</p></div>";
+}
+
+function wphaml_dir_warning() 
+{
+   echo "<div class='updated fade'><p>In order for php-haml to work you need to create <em>" . HAML_TEMPLATES . "</em> and make sure it's writeable by your webserver</p></div>";
 }
 
 /*
@@ -78,32 +89,34 @@ function wphaml_template_include($template)
    // Globalise the stuff we need
    global $template_output, $template_layout;
    
+   $haml_template = wph_haml_template_dir();
    // Is there a haml template?
-   if(substr($template, -9) == '.haml.php')
+   if(substr($template, -5) == '.haml')
    {
-      $haml_template = $template;
+      $haml_template .= $template;
    }
    else
    {
-      $haml_template = str_replace(".php", ".haml.php", $template);
+      $haml_template .= $template.'.haml';
    }
    
    if(file_exists($haml_template))
    {
       // Execute the template and save its output
-      $parser = new HamlParser(TEMPLATEPATH, COMPILED_TEMPLATES);
+      $parser = new HamlParser(wph_haml_template_dir(), COMPILED_TEMPLATES);
       $parser->setFile($haml_template);
 
       $template_output = $parser->render();
             
       if($template_layout == '')
       {
-         $template_layout = TEMPLATEPATH . "/layout.haml.php";
+         $template_layout = wph_haml_template_dir().'layout.haml';
       }
       
       // Execute the layout and display everything
       $parser = new HamlParser(TEMPLATEPATH, COMPILED_TEMPLATES);
       $parser->setFile($template_layout);
+      $parser->assign('yield', $template_output);
    
       echo $parser->render();
       
@@ -122,7 +135,7 @@ function use_layout($name)
 {
    global $template_layout;
 
-   $layout = TEMPLATEPATH . "/layout-$name.haml.php";
+   $layout = TEMPLATEPATH . "/layout-$name.haml";
    
    if(!file_exists($layout))
    {
@@ -135,7 +148,7 @@ function use_layout($name)
 
 function render_partial($name, $return = false)
 {
-   $partial_template = TEMPLATEPATH . "/partials/_$name.haml.php";
+   $partial_template = wph_haml_template_dir() . "partials/_$name.haml";
       
    if(!file_exists($partial_template))
    {
@@ -144,7 +157,7 @@ function render_partial($name, $return = false)
    }
    
    // Execute the template and save its output
-   $parser = new HamlParser(TEMPLATEPATH, COMPILED_TEMPLATES);
+   $parser = new HamlParser(wph_haml_template_dir(), COMPILED_TEMPLATES);
    $parser->setFile($partial_template);
 
    $partial_output = $parser->render();
