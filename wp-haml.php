@@ -63,7 +63,8 @@ function wphaml_dir_warning()
  */
 
 require_once dirname(__FILE__) . "/helpers.php";
-require_once  dirname(__FILE__) . '/phphaml/includes/haml/HamlParser.class.php';
+require_once dirname(__FILE__) . '/hamlphp/src/HamlPHP/HamlPHP.php';
+require_once dirname(__FILE__) . '/hamlphp/src/HamlPHP/Storage/FileStorage.php';
  
 /**
   * $template_layout is set by the template if it wishes to use a custom layout. 
@@ -89,9 +90,15 @@ function wphaml_template_include($template)
    // Globalise the stuff we need
    global $template_output, $template_layout;
    
-   $haml_template = wph_haml_template_dir();
+   if(strpos($template, wph_haml_template_dir()) === false)
+	   $haml_template = wph_haml_template_dir();
+   
    // Is there a haml template?
-   if(substr($template, -5) == '.haml')
+   if($template == '')
+   {
+      $haml_template .= 'index.haml';
+   }
+   else if(substr($template, -5) == '.haml')
    {
       $haml_template .= $template;
    }
@@ -103,29 +110,32 @@ function wphaml_template_include($template)
    if(file_exists($haml_template))
    {
       // Execute the template and save its output
-      $parser = new HamlParser(wph_haml_template_dir(), COMPILED_TEMPLATES);
-      $parser->setFile($haml_template);
-
-      $template_output = $parser->render();
-            
+      $template_output = wphaml_get_parsed_result($haml_template);
+            /*
       if($template_layout == '')
       {
          $template_layout = wph_haml_template_dir().'layout.haml';
       }
       
       // Execute the layout and display everything
-      $parser = new HamlParser(TEMPLATEPATH, COMPILED_TEMPLATES);
-      $parser->setFile($template_layout);
-      $parser->assign('yield', $template_output);
-   
-      echo $parser->render();
-      
+      echo wphaml_get_parsed_result($template_layout);
+      */
+      echo $template_output;
       return null;
    }
    
    return $template;
 }
 
+function wphaml_get_parsed_result($template)
+{
+    // Make sure that a directory _tmp_ exists in your application and it is writable.
+    $parser = new HamlPHP(new FileStorage('/projects/SiteNinja/base-site/wp-content/themes/sn-base-theme/cache/'));
+
+    $content = $parser->parseFile($template);
+
+    return $content;
+}
 
 /*
  * Create haml alternatives for the get_* functions
@@ -146,7 +156,7 @@ function use_layout($name)
    $template_layout = $layout;
 }
 
-function render_partial($name, $return = false)
+function render_partial_($name, $return = false)
 {
    $partial_template = wph_haml_template_dir() . "partials/_$name.haml";
       
@@ -170,6 +180,7 @@ function render_partial($name, $return = false)
    echo $partial_output;
 }
 
+
 function yield()
 {
    global $template_output;
@@ -187,7 +198,7 @@ function yield()
 /*
  * Warn people not to use get_header and get_footer
  */
- 
+ /*
 add_action('get_header', 'wphaml_headfoot_warnings');
 add_action('get_footer', 'wphaml_headfoot_warnings');
 add_action('get_sidebar', 'wphaml_headfoot_warnings');
@@ -197,6 +208,6 @@ function wphaml_headfoot_warnings()
 {
    trigger_error("Eek! Don't use get_header, get_footer, get_sidebar or get_search_form. You should use layouts and partials instead: <tt>use_layout</tt> and <tt>get_partial</tt>", E_USER_WARNING);
 }
-
+*/
 
 ?>

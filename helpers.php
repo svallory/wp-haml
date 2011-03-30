@@ -7,7 +7,7 @@ function wph_get_stylesheet($name = 'style')
 
 function wph_haml_template_dir()
 {
-   return get_template_directory().'/templates/';
+   return get_template_directory().'/';
 }
 
 function wph_theme_dir()
